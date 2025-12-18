@@ -366,7 +366,7 @@ class PagedAttention:
         # 4. Call flex_attention
         # Note: k_cache and v_cache have batch size 1, but query has batch size B.
         # The block mask handles the routing (preventing batch B from seeing batch A's pages).
-        output = torch.compile(flex_attention)(
+        output = flex_attention(
             query,
             k_cache,
             v_cache,

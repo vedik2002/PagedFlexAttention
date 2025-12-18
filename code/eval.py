@@ -2,7 +2,9 @@ import os
 import re
 import time
 import math
+import wandb
 import random
+import argparse
 import statistics
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Type
@@ -445,6 +447,7 @@ def bench_context_length_scalability(
     chunk = " The quick brown fox jumps over the lazy dog."
 
     for target_len in token_lengths:
+        PagedGranite.reset_cache(model)
         prompt = ""
         while len(tokenizer(prompt).input_ids) < target_len:
             prompt += chunk
@@ -503,7 +506,6 @@ def bench_context_length_scalability(
 
     return results
 
-
 def print_run_report(title: str, overall_score: float, calls: List[CallMetrics]):
     s = summarize_calls(calls)
     print(f"\n=== {title} ===")
@@ -517,10 +519,35 @@ def print_run_report(title: str, overall_score: float, calls: List[CallMetrics])
 
 if __name__ == "__main__":
     
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model_path = "ibm-granite/granite-4.0-h-1b"
+    parser = argparse.ArgumentParser(description='Evaluate Granite models')
+    parser.add_argument('--model_path', type=str, default='ibm-granite/granite-4.0-h-1b', help='Path to the Granite model')
+    parser.add_argument('--mode', type=str, choices=['default', 'paged'], default='default', help='Model type: default or paged')
 
-    granite = PagedGranite4HF(model_path=model_path, device=device, max_new_tokens=16, max_batch_size=16)
+    args = parser.parse_args()
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_path = args.model_path
+
+    # WandB setup 
+    wandb.login(key="d064fb57cc7dee8a7a9e21f1ebd59185be95ec43")
+
+    if args.mode == 'default':
+        granite = Granite4HF(model_path=model_path, device=device, max_new_tokens=16)
+    else:
+        granite = PagedGranite4HF(model_path=model_path, device=device, max_new_tokens=16, max_batch_size=16)
+
+    config={
+        "model_path": args.model_path.split("/")[-1],
+        "mode": args.mode,
+        "device": device
+    }
+    wandb.init(
+        project="hpml-final-project",
+        name=f"{args.model_path.split("/")[-1]}-{args.mode}",
+        config=config
+    )
+
+
 
     # -------- MMLU --------
     granite.reset_metrics()
@@ -567,6 +594,14 @@ if __name__ == "__main__":
             f"qps={r['qps']:.2f} | in_tok/s={r['in_tokens_per_s']:.0f} | out_tok/s={r['out_tokens_per_s']:.0f} | "
             f"peak_alloc={_format_bytes(r['peak_alloc'])}"
         )
+        wandb.log({
+            "batch_size": r['batch_size'],                        # x-axis
+            "latency_per_query_ms": r['latency_ms_per_query'],    # y-axis
+            "qps": r['qps'],
+            "in_tokens_per_s": r['in_tokens_per_s'],
+            "out_tokens_per_s": r['out_tokens_per_s'],
+            "peak_alloc": r['peak_alloc'] if r['peak_alloc'] is not None else 0,
+        })
 
     print("\n=== Context Length Scalability Microbenchmark ===")
     max_ctx = getattr(getattr(hf_model, "config", None), "max_position_embeddings", None) or 4096
@@ -582,8 +617,15 @@ if __name__ == "__main__":
         iters=5,
     )
     print(f"Using max_position_embeddings={max_ctx}")
-    for r in ctx_results:
+    for i, r in enumerate(ctx_results):
         print(
-            f"in_tokens={r['input_tokens']:>4} | avg_ms={r['avg_latency_ms']:.2f} | p95_ms={r['p95_latency_ms']:.2f} | "
+            f"token_length={token_lengths[i]:>4} | avg_ms={r['avg_latency_ms']:.2f} | p95_ms={r['p95_latency_ms']:.2f} | "
             f"ms/token={r['ms_per_input_token']:.4f} | peak_alloc={_format_bytes(r['peak_alloc'])}"
         )
+        wandb.log({
+            "token_length": token_lengths[i],                    # x-axis
+            "avg_latency_ms": r['avg_latency_ms'],                # y-axis
+            "p95_latency_ms": r['p95_latency_ms'],
+            "ms_per_input_token": r['ms_per_input_token'],
+            "peak_alloc": r['peak_alloc'] if r['peak_alloc'] is not None else 0,
+        })

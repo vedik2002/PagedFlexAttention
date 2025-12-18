@@ -1,0 +1,38 @@
+=== MMLU Results + Metrics ===
+MMLU Task Accuracy (task=high_school_computer_science): 0.67
+MMLU Task Accuracy (task=astronomy): 0.6842105263157895
+Accuracy (overall_score): 0.6786
+Queries: 252
+Latency (ms/query): avg=1780.45, p50=2366.38, p95=2796.73
+Throughput: 0.56 queries/s
+Token throughput: in=230.20 tok/s, out=5.27 tok/s
+Peak GPU memory (allocated): 9.80 GB
+Peak GPU memory (reserved):  13.61 GB
+
+=== TruthfulQA Results + Metrics ===
+TruthfulQA Task Accuracy (task=Science): 0.2222222222222222
+TruthfulQA Task Accuracy (task=Finance): 0.4444444444444444
+Accuracy (overall_score): 0.3333
+Queries: 18
+Latency (ms/query): avg=1304.72, p50=948.15, p95=2435.48
+Throughput: 0.77 queries/s
+Token throughput: in=246.50 tok/s, out=4.22 tok/s
+Peak GPU memory (allocated): 7.47 GB
+Peak GPU memory (reserved):  13.62 GB
+
+=== Batching Efficiency Microbenchmark ===
+Asking to truncate to max_length but no maximum length is provided and the model has no predefined maximum length. Default to no truncation.
+BS= 1 | ms/query=289.84 | qps=3.45 | in_tok/s=152 | out_tok/s=3 | peak_alloc=5.15 GB
+BS= 2 | ms/query=304.07 | qps=3.29 | in_tok/s=145 | out_tok/s=3 | peak_alloc=7.49 GB
+BS= 4 | ms/query=276.02 | qps=3.62 | in_tok/s=159 | out_tok/s=4 | peak_alloc=12.19 GB
+BS= 8 | ms/query=263.78 | qps=3.79 | in_tok/s=167 | out_tok/s=4 | peak_alloc=21.57 GB
+BS=16 | ms/query=257.56 | qps=3.88 | in_tok/s=171 | out_tok/s=4 | peak_alloc=40.34 GB
+
+=== Context Length Scalability Microbenchmark ===
+Using max_position_embeddings=131072
+token_length= 128 | avg_ms=1172.16 | p95_ms=1193.71 | ms/token=9.0166 | peak_alloc=5.15 GB
+token_length= 256 | avg_ms=1377.78 | p95_ms=1387.26 | ms/token=5.2991 | peak_alloc=7.47 GB
+token_length= 512 | avg_ms=1578.74 | p95_ms=1597.69 | ms/token=3.0360 | peak_alloc=9.79 GB
+token_length=1024 | avg_ms=2002.98 | p95_ms=2019.94 | ms/token=1.9446 | peak_alloc=14.45 GB
+token_length=2048 | avg_ms=2101.57 | p95_ms=2104.87 | ms/token=1.0252 | peak_alloc=23.75 GB
+token_length=4096 | avg_ms=3819.25 | p95_ms=3820.22 | ms/token=0.9315 | peak_alloc=42.36 GB

@@ -3,7 +3,7 @@ from torch import nn
 from typing import Optional, Tuple
 from paged_attention import PagedAttention
 from transformers import AutoModelForCausalLM
-from torch.nn.attention.flex_attention import flex_attention
+from torch.nn.attention.flex_attention import flex_attention, create_block_mask
 from transformers.models.granite.modeling_granite import apply_rotary_pos_emb
 
 class PagedGraniteAttention(nn.Module):
@@ -33,6 +33,25 @@ class PagedGraniteAttention(nn.Module):
         )
         self.v_cache = torch.zeros_like(self.k_cache)
 
+    @staticmethod
+    def build_segment_ids(attention_mask: torch.Tensor) -> torch.Tensor:
+        """
+        Build segment IDs for packed batches.
+        attention_mask: (B, S, K, V), where K=V=S for causal, 1 for valid tokens, 0 for padding.
+        Returns segment_ids: (B, S) with segment indices.
+        """
+        B, _, S, _ = attention_mask.shape
+        device = attention_mask.device
+
+        segment_ids = torch.zeros((B, S), dtype=torch.long, device=device)
+        for b in range(B):
+            seg_id = 0
+            for s in range(S):
+                if attention_mask[b, 0, s, :].sum() == 0:
+                    seg_id += 1
+                segment_ids[b, s] = seg_id
+        return segment_ids
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -56,6 +75,9 @@ class PagedGraniteAttention(nn.Module):
             else:
                 position_ids = torch.arange(S, device=device).unsqueeze(0).repeat(B, 1)
 
+        # if attention_mask is not None:
+        #     segment_ids = self.build_segment_ids(attention_mask)
+        #     position_ids = segment_ids * S + position_ids
         kv_lens = position_ids[:, -1] + 1
 
         # 2. Linear Projections (No manual scaling here!)
@@ -102,7 +124,7 @@ class PagedGraniteAttention(nn.Module):
             return torch.where(is_valid, score, NEG_INF)
 
         # 6. Execute Flex Attention with correct scaling
-        # attn_output = torch.compile(flex_attention)(
+        # attn_output = flex_attention(
         #     q, self.k_cache, self.v_cache,
         #     score_mod=paged_score_mod,
         #     scale=self.scaling, # Use the attention_multiplier as the scale
@@ -118,6 +140,7 @@ class PagedGraniteAttention(nn.Module):
             scale=self.scaling,
             enable_gqa=(self.num_heads != self.num_kv_heads),
         )
+
 
         # 7. Output Projection (Return exactly 2 values)
         attn_output = attn_output.transpose(1, 2).contiguous().view(B, S, -1)
