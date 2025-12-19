@@ -1,4 +1,4 @@
-# HPML Project: Breaking the Granite-4 Ceiling — Memory-Efficient Inference with Paged FlexAttention
+# HPML Project: Breaking the Granite-4 Ceiling: Memory-Efficient Inference with Paged FlexAttention
 
 ## Team Information
 - **Team Name**: Team 13
@@ -152,3 +152,4 @@ python eval.py --mode <default | paged>
 * Figures are saved in `figures/`
 * This repository focuses exclusively on **inference-time optimization**
 * Small-batch latency overhead is expected due to page indirection
+
