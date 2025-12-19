@@ -192,7 +192,7 @@ class Granite4HF(DeepEvalBaseLLM):
             self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=self.dtype)
 
         self.model.to(device)
-        torch.compile(self.model)
+        # torch.compile(self.model)
         self.model.eval()
 
         self.calls: List[CallMetrics] = []
@@ -325,7 +325,7 @@ class PagedGranite4HF(Granite4HF):
         )
         
         self.model.to(device)
-        torch.compile(self.model)
+        # torch.compile(self.model)
         self.model.eval()
 
         self.calls: list[CallMetrics] = []
@@ -534,7 +534,7 @@ if __name__ == "__main__":
     if args.mode == 'default':
         granite = Granite4HF(model_path=model_path, device=device, max_new_tokens=16)
     else:
-        granite = PagedGranite4HF(model_path=model_path, device=device, max_new_tokens=16, max_batch_size=16)
+        granite = PagedGranite4HF(model_path=model_path, device=device, max_new_tokens=16, max_batch_size=64)
 
     config={
         "model_path": args.model_path.split("/")[-1],
@@ -583,7 +583,7 @@ if __name__ == "__main__":
         tokenizer=hf_tok,
         device=device,
         base_prompt=base_prompt,
-        batch_sizes=[1, 2, 4, 8, 16],
+        batch_sizes=[1, 2, 4, 8, 16, 32],
         max_new_tokens=8,
         warmup=1,
         iters=5,

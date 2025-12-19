@@ -27,6 +27,7 @@ BS= 2 | ms/query=262.78 | qps=3.81 | in_tok/s=167 | out_tok/s=4 | peak_alloc=7.4
 BS= 4 | ms/query=256.08 | qps=3.90 | in_tok/s=172 | out_tok/s=4 | peak_alloc=12.12 GB
 BS= 8 | ms/query=253.37 | qps=3.95 | in_tok/s=174 | out_tok/s=4 | peak_alloc=21.50 GB
 BS=16 | ms/query=251.74 | qps=3.97 | in_tok/s=175 | out_tok/s=4 | peak_alloc=40.28 GB
+BS=32 | ms/query=251.91 | qps=3.97 | in_tok/s=175 | out_tok/s=4 | peak_alloc=77.82 GB
 
 === Context Length Scalability Microbenchmark ===
 Using max_position_embeddings=131072
